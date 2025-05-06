@@ -15,7 +15,7 @@ export const getTrainings = async () => {
 
             try {
                 const res = await fetch(trainingsUrl);
-                if (!res.ok) throw new Error("Failed to fetch trainings");
+                if (!res.ok) throw new Error("Impossible to fetch trainings");
 
                 const data = await res.json();
                 const trainings = data._embedded?.trainings ?? [];
@@ -25,11 +25,40 @@ export const getTrainings = async () => {
                     customer: customerName,
                 }));
             } catch (err) {
-                console.warn(`Could not fetch trainings for ${customer.firstname} ${customer.lastname}`);
+                console.warn(`Could not fetch trainings`);
                 return [];
             }
         })
     );
 
-    return allTrainings.flat(); // Merge all into one array
+    return allTrainings.flat(); // Found this method here https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
 };
+export const deleteTraining = async (url: string) => {
+    const response = await fetch(url, {
+        method: 'DELETE',
+    });
+
+    if (!response.ok) {
+        throw new Error('Impossible delete training');
+    }
+};
+export async function addTraining(training: {
+    date: string;
+    duration: number;
+    activity: string;
+    customer: string;
+}) {
+    const response = await fetch(import.meta.env.VITE_API_URL + "trainings", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(training)
+    });
+
+    if (!response.ok) {
+        throw new Error("Impossible to add training");
+    }
+
+    return await response.json();
+}
