@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AgGridReact } from '@ag-grid-community/react';
+import { CsvExportModule } from '@ag-grid-community/csv-export';
+import type { ColDef } from "@ag-grid-community/core";
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
 import Button from "@mui/material/Button";
@@ -7,16 +9,16 @@ import Button from "@mui/material/Button";
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-material.css';
 
-import type { ColDef } from '@ag-grid-community/core';
 import AddCustomer from "./AddCustomer";
 import EditCustomer from "./EditCustomer";
 import { getCustomers, deleteCustomer } from "../customerapi";
 import type { CustomerData } from "../types";
 
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
+ModuleRegistry.registerModules([ClientSideRowModelModule, CsvExportModule]);
 
 function Customerlist() {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
+  const gridRef = useRef<AgGridReact<CustomerData>>(null);
 
   const fetchCustomers = () => {
     getCustomers()
@@ -40,6 +42,21 @@ function Customerlist() {
         .then(() => fetchCustomers())
         .catch((err) => console.error("Delete failed:", err));
     }
+  };
+
+  const handleExport = () => {
+    gridRef.current?.api.exportDataAsCsv({
+      fileName: "customers.csv",
+      columnKeys: [
+        "firstname",
+        "lastname",
+        "streetaddress",
+        "postcode",
+        "city",
+        "email",
+        "phone",
+      ],
+    });
   };
 
   const [colDefs] = useState<ColDef<CustomerData>[]>([
@@ -74,9 +91,16 @@ function Customerlist() {
 
   return (
     <>
-      <AddCustomer fetchCustomers={fetchCustomers} />
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+        <AddCustomer fetchCustomers={fetchCustomers} />
+        <Button variant="outlined" onClick={handleExport}>
+          Export to CSV
+        </Button>
+      </div>
+
       <div className="ag-theme-material" style={{ height: 600, width: "100%" }}>
         <AgGridReact
+          ref={gridRef}
           rowData={customers}
           columnDefs={colDefs}
           rowModelType="clientSide"
